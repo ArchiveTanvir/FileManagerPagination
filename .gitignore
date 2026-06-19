@@ -1,0 +1,7 @@
+*.fpa
+node_modules/
+demo/
+banner.png
+.git/
+.github/
+build-release.sh

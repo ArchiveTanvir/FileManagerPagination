@@ -1,0 +1,165 @@
+.fmp-pagination {
+  --fmp-border: rgba(0, 0, 0, 0.05);
+  --fmp-bg: rgba(255, 255, 255, 0.8);
+  --fmp-hover-bg: rgba(0, 0, 0, 0.05);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--fmp-border);
+  background: var(--fmp-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+:root.dark .fmp-pagination,
+.dark .fmp-pagination {
+  --fmp-border: rgba(255, 255, 255, 0.1);
+  --fmp-bg: rgba(255, 255, 255, 0.05);
+  --fmp-hover-bg: rgba(255, 255, 255, 0.05);
+}
+
+@supports (color: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1))) {
+  .fmp-pagination {
+    --fmp-border: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.1));
+    --fmp-bg: light-dark(rgba(255,255,255,0.8), rgba(255,255,255,0.05));
+    --fmp-hover-bg: light-dark(rgba(0,0,0,0.05), rgba(255,255,255,0.05));
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .fmp-pagination {
+    --fmp-border: rgba(255, 255, 255, 0.1);
+    --fmp-bg: rgba(255, 255, 255, 0.05);
+    --fmp-hover-bg: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.fmp-status {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+  white-space: nowrap;
+  padding: 0 4px;
+}
+
+@media (max-width: 640px) {
+  .fmp-pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fmp-status {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+.fmp-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.fmp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.fmp-btn:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--ring, 239 84% 67%) / 0.3);
+}
+
+.fmp-btn:hover:not(:disabled) {
+  background: var(--fmp-hover-bg);
+  color: hsl(var(--foreground, 222.2 84% 4.9%));
+}
+
+.fmp-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.fmp-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.fmp-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.fmp-pages {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0 4px;
+}
+
+.fmp-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 6px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  line-height: 1;
+  outline: none;
+}
+
+.fmp-page:focus-visible {
+  box-shadow: 0 0 0 2px hsl(var(--ring, 239 84% 67%) / 0.3);
+}
+
+.fmp-page:hover {
+  background: var(--fmp-hover-bg);
+  color: hsl(var(--foreground, 222.2 84% 4.9%));
+}
+
+.fmp-page:active:not(.active) {
+  transform: scale(0.95);
+}
+
+.fmp-page.active {
+  background: hsl(var(--primary, 239 84% 67%));
+  color: hsl(var(--primary-foreground, 0 0% 100%));
+  font-weight: 700;
+  cursor: default;
+}
+
+.fmp-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 32px;
+  color: hsl(var(--muted-foreground, 215.4 16.3% 46.9%));
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}

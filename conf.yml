@@ -1,0 +1,25 @@
+plugin:
+  name: FileManagerPagination
+  identifier: filemanagerpagination
+  description: "Adds configurable pagination to the file manager, removing the 250-file hard limit."
+  flags:
+    - hasInstallScript
+    - hasRemovalScript
+    - hasUpdateScript
+  version: 1.0.0
+  target: v2
+  author:
+    - ArchiveTanvir
+  icon: "https://raw.githubusercontent.com/ArchiveTanvir/FileManagerPagination/main/icon.svg"
+  requiredConfigs:
+    - per_page
+  dependencies:
+    - php-ext=json
+config:
+  - name: per_page
+    display_name: "Files per page"
+    type: text
+    description: "How many files/folders to show per page (10–500)"
+    required: true
+    validation: {}
+    default: "50"
