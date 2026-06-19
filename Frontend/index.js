@@ -16,7 +16,8 @@
   var loading = false;
   var el = null;
   var guardTimer = null;
-  var pageUrlPattern = /\/server\/[^/]+\/files/;
+  var pollTimer = null;
+  var pageUrlPattern = /\/server\/[^/]+\/files\/?$/;
 
   var ICONS = {
     first: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>',
@@ -72,9 +73,10 @@
   function parseFileRequest(url) {
     if (typeof url !== 'string') return null;
     if (!isFileManagerPage()) return null;
+    if (/[?&]search=/.test(url)) return null;
     var m = url.match(/\/api\/user\/servers\/([^/]+)\/files(?:[?/]|$)/);
     if (!m) return null;
-    if (/\/search|\/write|\/rename|\/delete|\/upload|\/download|\/create-directory|\/compress|\/decompress|\/copy|\/chmod|\/pull|\/hash|\/trash|\/wipe|\/archive|\/extract|\/paginated/.test(url)) return null;
+    if (/\/search|\/write|\/rename|\/delete|\/upload|\/download|\/create-directory|\/compress|\/decompress|\/copy|\/chmod|\/pull|\/hash|\/trash|\/wipe|\/archive|\/extract|\/edit|\/paginated/.test(url)) return null;
     return m[1];
   }
 
@@ -204,9 +206,11 @@
     if (p < 1 || p > totalPages) return;
     currentPage = p;
     inject();
-    setLoading(true);
     var btn = findRefreshBtn();
-    if (btn) btn.click();
+    if (btn) {
+      setLoading(true);
+      btn.click();
+    }
   }
 
   var origOpen = XMLHttpRequest.prototype.open;
@@ -247,6 +251,21 @@
       clearInterval(guardTimer);
       guardTimer = null;
     }
+    if (pollTimer) {
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+
+    if (el && isInDOM(el)) {
+      loading = false;
+      refresh();
+      guardTimer = setInterval(function () {
+        if (!isFileManagerPage()) { clearInterval(guardTimer); guardTimer = null; return; }
+        if (!isInDOM(el)) inject();
+      }, GUARD_INTERVAL);
+      return;
+    }
+
     el = null;
     loading = false;
 
@@ -254,7 +273,12 @@
       if (!isFileManagerPage()) return;
 
       var tries = 0;
-      var pollTimer = setInterval(function () {
+      pollTimer = setInterval(function () {
+        if (!isFileManagerPage()) {
+          clearInterval(pollTimer);
+          pollTimer = null;
+          return;
+        }
         tries++;
         var target = findInjectionTarget();
         if (target && (target.querySelector('[class*="divide-y"]') || target.classList.contains('overflow-hidden'))) {
@@ -264,10 +288,6 @@
             if (!isFileManagerPage()) { clearInterval(guardTimer); guardTimer = null; return; }
             if (!isInDOM(el)) inject();
           }, GUARD_INTERVAL);
-          setTimeout(function () {
-            var btn = findRefreshBtn();
-            if (btn) btn.click();
-          }, REFRESH_DELAY);
           return;
         }
         if (tries >= POLL_MAX_TRIES) {
@@ -295,8 +315,13 @@
       var showingSearch = el.querySelector('.fmp-status') && el.querySelector('.fmp-status').textContent.indexOf('Searching') !== -1;
       if (searching && !showingSearch) {
         refresh();
+        var btn = findRefreshBtn();
+        if (btn) btn.click();
       } else if (!searching && showingSearch) {
+        currentPage = 1;
         refresh();
+        var btn = findRefreshBtn();
+        if (btn) btn.click();
       }
     }
     if (isFileManagerPage() && el && !isInDOM(el)) {

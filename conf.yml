@@ -6,7 +6,7 @@ plugin:
     - hasInstallScript
     - hasRemovalScript
     - hasUpdateScript
-  version: 1.0.0
+  version: 1.0.1
   target: v2
   author:
     - ArchiveTanvir

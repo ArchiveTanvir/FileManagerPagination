@@ -17,9 +17,9 @@ class FilePaginationController
 {
     use CheckSubuserPermissionsTrait;
 
-    private const VERSION = '1.0.0';
+    private const VERSION = '1.0.1';
     private const MAX_PER_PAGE = 500;
-    private const MIN_PER_PAGE = 10;
+    private const MIN_PER_PAGE = 1;
     private const DEFAULT_PER_PAGE = 50;
 
     private static ?int $cachedPerPage = null;
@@ -58,7 +58,7 @@ class FilePaginationController
 
             $path = $this->sanitizePath($request->query->get('path', '/'));
             $page = max(1, (int) $request->query->get('page', 1));
-            $perPage = $this->resolvePerPage();
+            $perPage = $this->resolvePerPage((int) $request->query->get('per_page', 0));
 
             $wings = Wings::fromNode($node, 30);
             $response = $wings->getServer()->listDirectory($server['uuid'], $path, true);
@@ -114,10 +114,13 @@ class FilePaginationController
         return ApiResponse::success(['per_page' => $perPage ?? (string) self::DEFAULT_PER_PAGE]);
     }
 
-    private function resolvePerPage(): int
+    private function resolvePerPage(int $requested = 0): int
     {
         $configPerPage = $this->readConfigSetting();
         $perPage = $configPerPage !== null ? (int) $configPerPage : self::DEFAULT_PER_PAGE;
+        if ($requested > 0) {
+            $perPage = $requested;
+        }
         return min(self::MAX_PER_PAGE, max(self::MIN_PER_PAGE, $perPage));
     }
 
