@@ -14,6 +14,8 @@ A FeatherPanel v2 plugin that replaces the 250-file hard limit in the file manag
 - Light and dark mode — picks up FeatherPanel's theme automatically
 - No core file modifications
 
+![FileManager Pagination](pagination.png)
+
 ## Requirements
 
 - FeatherPanel v2.x
