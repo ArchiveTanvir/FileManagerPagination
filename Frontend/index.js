@@ -7,11 +7,13 @@
   var GUARD_INTERVAL = 2000;
   var REFRESH_DELAY = 300;
   var PER_PAGE_DEFAULT = 50;
+  var SEARCH_MAX_FILES = 500;
 
   var currentPage = 1;
   var totalFiles = 0;
   var totalPages = 0;
   var perPage = PER_PAGE_DEFAULT;
+  var loading = false;
   var el = null;
   var guardTimer = null;
   var pageUrlPattern = /\/server\/[^/]+\/files/;
@@ -21,6 +23,7 @@
     prev: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>',
     next: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>',
     last: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 17 5-5-5-5"/><path d="m13 17 5-5-5-5"/></svg>',
+    spinner: '<svg class="fmp-spinner" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
   };
 
   function isFileManagerPage() {
@@ -29,6 +32,11 @@
 
   function isInDOM(node) {
     return node && node.parentNode && document.body.contains(node);
+  }
+
+  function isSearchActive() {
+    var input = document.getElementById('file-search-input');
+    return input && input.value.trim().length > 0;
   }
 
   function getConfig() {
@@ -89,40 +97,53 @@
 
   function buildUI() {
     var c = document.createElement('div');
-    c.className = 'fmp-pagination';
+    c.className = 'fmp-pagination' + (loading ? ' fmp-loading' : '');
 
     var status = document.createElement('span');
     status.className = 'fmp-status';
-    var from = totalFiles > 0 ? (currentPage - 1) * perPage + 1 : 0;
-    var to = Math.min(currentPage * perPage, totalFiles);
-    status.textContent = 'Showing ' + from + '\u2013' + to + ' of ' + totalFiles;
+
+    if (loading) {
+      var spinner = document.createElement('span');
+      spinner.className = 'fmp-spinner-wrap';
+      spinner.innerHTML = ICONS.spinner;
+      status.appendChild(spinner);
+      status.appendChild(document.createTextNode(' Loading\u2026'));
+    } else if (isSearchActive()) {
+      status.textContent = 'Searching all files\u2026';
+    } else {
+      var from = totalFiles > 0 ? (currentPage - 1) * perPage + 1 : 0;
+      var to = Math.min(currentPage * perPage, totalFiles);
+      status.textContent = 'Showing ' + from + '\u2013' + to + ' of ' + totalFiles;
+    }
 
     var controls = document.createElement('div');
     controls.className = 'fmp-controls';
 
-    controls.appendChild(createIconBtn('fmp-btn fmp-first', ICONS.first, function () { goTo(1); }, currentPage <= 1, 'First page'));
-    controls.appendChild(createIconBtn('fmp-btn fmp-prev', ICONS.prev, function () { goTo(currentPage - 1); }, currentPage <= 1, 'Previous page'));
+    if (!isSearchActive()) {
+      controls.appendChild(createIconBtn('fmp-btn fmp-first', ICONS.first, function () { goTo(1); }, currentPage <= 1, 'First page'));
+      controls.appendChild(createIconBtn('fmp-btn fmp-prev', ICONS.prev, function () { goTo(currentPage - 1); }, currentPage <= 1, 'Previous page'));
 
-    var pagesDiv = document.createElement('div');
-    pagesDiv.className = 'fmp-pages';
-    var range = getPageRange(currentPage, totalPages);
-    for (var i = 0; i < range.length; i++) {
-      var p = range[i];
-      if (p === ELLIPSIS) {
-        var dot = document.createElement('span');
-        dot.className = 'fmp-ellipsis';
-        dot.textContent = '\u2026';
-        pagesDiv.appendChild(dot);
-      } else {
-        var btn = createPageBtn(p, p === currentPage);
-        btn.addEventListener('click', (function (page) { return function () { goTo(page); }; })(p));
-        pagesDiv.appendChild(btn);
+      var pagesDiv = document.createElement('div');
+      pagesDiv.className = 'fmp-pages';
+      var range = getPageRange(currentPage, totalPages);
+      for (var i = 0; i < range.length; i++) {
+        var p = range[i];
+        if (p === ELLIPSIS) {
+          var dot = document.createElement('span');
+          dot.className = 'fmp-ellipsis';
+          dot.textContent = '\u2026';
+          pagesDiv.appendChild(dot);
+        } else {
+          var btn = createPageBtn(p, p === currentPage);
+          btn.addEventListener('click', (function (page) { return function () { goTo(page); }; })(p));
+          pagesDiv.appendChild(btn);
+        }
       }
-    }
-    controls.appendChild(pagesDiv);
+      controls.appendChild(pagesDiv);
 
-    controls.appendChild(createIconBtn('fmp-btn fmp-next', ICONS.next, function () { goTo(currentPage + 1); }, currentPage >= totalPages, 'Next page'));
-    controls.appendChild(createIconBtn('fmp-btn fmp-last', ICONS.last, function () { goTo(totalPages); }, currentPage >= totalPages, 'Last page'));
+      controls.appendChild(createIconBtn('fmp-btn fmp-next', ICONS.next, function () { goTo(currentPage + 1); }, currentPage >= totalPages, 'Next page'));
+      controls.appendChild(createIconBtn('fmp-btn fmp-last', ICONS.last, function () { goTo(totalPages); }, currentPage >= totalPages, 'Last page'));
+    }
 
     c.appendChild(status);
     c.appendChild(controls);
@@ -167,10 +188,23 @@
     }
   }
 
+  function setLoading(v) {
+    loading = v;
+    if (isInDOM(el)) {
+      if (!loading || isSearchActive()) {
+        refresh();
+      } else {
+        el.innerHTML = '';
+        el.appendChild(buildUI());
+      }
+    }
+  }
+
   function goTo(p) {
     if (p < 1 || p > totalPages) return;
     currentPage = p;
     inject();
+    setLoading(true);
     var btn = findRefreshBtn();
     if (btn) btn.click();
   }
@@ -181,19 +215,26 @@
     if (uuidShort) {
       var params = new URLSearchParams(url.indexOf('?') !== -1 ? url.split('?')[1] : '');
       var path = params.get('path') || '/';
-      url = '/api/user/servers/' + uuidShort + '/files/paginated?path=' + encodeURIComponent(path) + '&page=' + currentPage + '&per_page=' + perPage;
+
+      var activePerPage = isSearchActive() ? SEARCH_MAX_FILES : perPage;
+      var activePage = isSearchActive() ? 1 : currentPage;
+
+      url = '/api/user/servers/' + uuidShort + '/files/paginated?path=' + encodeURIComponent(path) + '&page=' + activePage + '&per_page=' + activePerPage;
 
       this.addEventListener('readystatechange', function () {
-        if (this.readyState === 4 && this.status === 200) {
-          try {
-            var d = JSON.parse(this.responseText);
-            if (d && d.success && d.data && d.data.pagination) {
-              totalFiles = d.data.pagination.total;
-              totalPages = d.data.pagination.total_pages;
-              if (currentPage > totalPages) currentPage = totalPages || 1;
-              if (isInDOM(el)) setTimeout(refresh, 100);
-            }
-          } catch (e) {}
+        if (this.readyState === 4) {
+          setLoading(false);
+          if (this.status === 200) {
+            try {
+              var d = JSON.parse(this.responseText);
+              if (d && d.success && d.data && d.data.pagination) {
+                totalFiles = d.data.pagination.total;
+                totalPages = d.data.pagination.total_pages;
+                if (currentPage > totalPages) currentPage = totalPages || 1;
+                if (isInDOM(el)) setTimeout(refresh, 100);
+              }
+            } catch (e) {}
+          }
         }
       });
     }
@@ -207,6 +248,7 @@
       guardTimer = null;
     }
     el = null;
+    loading = false;
 
     getConfig().then(function () {
       if (!isFileManagerPage()) return;
@@ -245,7 +287,17 @@
     var cur = window.location.pathname;
     if (cur !== navUrl) {
       navUrl = cur;
+      loading = false;
       init();
+    }
+    if (isFileManagerPage() && el && isInDOM(el)) {
+      var searching = isSearchActive();
+      var showingSearch = el.querySelector('.fmp-status') && el.querySelector('.fmp-status').textContent.indexOf('Searching') !== -1;
+      if (searching && !showingSearch) {
+        refresh();
+      } else if (!searching && showingSearch) {
+        refresh();
+      }
     }
     if (isFileManagerPage() && el && !isInDOM(el)) {
       inject();

@@ -163,3 +163,27 @@
   font-size: 0.75rem;
   letter-spacing: 0.05em;
 }
+
+.fmp-spinner-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+}
+
+.fmp-spinner {
+  animation: fmp-rotate 0.8s linear infinite;
+}
+
+@keyframes fmp-rotate {
+  to { transform: rotate(360deg); }
+}
+
+.fmp-loading .fmp-page.active {
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.fmp-loading .fmp-status {
+  display: inline-flex;
+  align-items: center;
+}
